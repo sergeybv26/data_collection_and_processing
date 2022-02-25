@@ -10,8 +10,7 @@
 Структура должна быть одинаковая для вакансий с обоих сайтов.
 Общий результат можно вывести с помощью dataFrame через pandas. Сохраните в json либо csv.
 """
-import re
-from pprint import pprint
+import pandas as pd
 from threading import Thread
 
 import requests
@@ -76,25 +75,35 @@ for thread in req_thread_list:
     thread.join()
 
 for vacancy in vacancy_list:
-    info = vacancy.find_all(re.compile('vacancy-title'))
-    vacancy_dict['name'].append(info.getText())
+    for vacancy_item in vacancy:
+        info = vacancy_item.find('a', {'data-qa': 'vacancy-serp__vacancy-title'})
+        vacancy_dict['name'].append(info.getText())
+        vacancy_dict['vacancy_url'].append(f"{info['href']}")
+        site_url_list = info['href'].split('/')
+        vacancy_dict['site_url'].append(f'{site_url_list[0]}//{site_url_list[2]}/')
+        try:
+            salary_str = vacancy_item.find('span', {'data-qa': 'vacancy-serp__vacancy-compensation'}).getText().\
+                replace('\u202f', '')
+        except AttributeError:
+            vacancy_dict['min_salary'].append(None)
+            vacancy_dict['max_salary'].append(None)
+            vacancy_dict['currency'].append(None)
+        else:
+            salary_list = salary_str.split()
+            if salary_list[0] == 'от':
+                vacancy_dict['min_salary'].append(int(salary_list[1]))
+                vacancy_dict['max_salary'].append(None)
+            elif salary_list[0] == 'до':
+                vacancy_dict['min_salary'].append(None)
+                vacancy_dict['max_salary'].append(int(salary_list[1]))
+            else:
+                vacancy_dict['min_salary'].append(int(salary_list[0]))
+                vacancy_dict['max_salary'].append(int(salary_list[2]))
+            vacancy_dict['currency'].append(salary_list[-1])
+        vacancy_dict['company'].append(vacancy_item.find('a', {'data-qa': 'vacancy-serp__vacancy-employer'}).getText())
+        vacancy_dict['address'].append(vacancy_item.find('div', {'data-qa': 'vacancy-serp__vacancy-address'}).getText())
 
-pprint(vacancy_dict)
-
-
-# while next_flag:
-#     response = requests.get(url, headers=HEADERS, params=params)
-#     dom = BeautifulSoup(response.text, 'html.parser')
-#
-#     vacancies = dom.find_all('div', {'class': 'vacancy-serp-item'})
-#
-#     # paginator = dom.find_all('a', {'data-qa': 'pager-next'})
-#
-#     # if not paginator:
-#     #     next_flag = False
-#
-#     pager = dom.find('div', {'class': 'pager'})
-#     pager_child = pager.findChildren()
-#     print(pager_child[-4])
-#     break
-print()
+data_frame = pd.DataFrame(vacancy_dict)
+print(data_frame)
+data_frame.to_csv('task2_1.csv')
+data_frame.to_json('task2_1.json')
