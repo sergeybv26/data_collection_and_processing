@@ -6,6 +6,8 @@
 """
 import time
 
+from pymongo import MongoClient
+from pymongo.errors import DuplicateKeyError
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
@@ -13,6 +15,9 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
+
+CLIENT_DB = MongoClient('127.0.0.1', 27017)
+DB = CLIENT_DB['mail']
 
 service = Service(executable_path="./chromedriver.exe")
 driver = webdriver.Chrome(service=service)
@@ -57,6 +62,8 @@ mail_info_list = []
 
 for elem in mail_set:
     mail_dict = {}
+    if elem is None:
+        continue
     driver.get(elem)
     sender = driver.find_element(By.XPATH, "//div[@class='letter__author']/span")
     mail_dict['_id'] = elem.split('/')[4][2: -2]
@@ -67,5 +74,12 @@ for elem in mail_set:
 
     mail_info_list.append(mail_dict)
 
+error_list = []
+database = DB.mail
+for el in mail_info_list:
+    try:
+        database.insert_one(el)
+    except DuplicateKeyError:
+        error_list.append(el)
 
-print()
+print(error_list)
