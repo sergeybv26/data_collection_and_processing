@@ -14,7 +14,7 @@ class LmruSpider(scrapy.Spider):
         self.start_urls = [f"https://leroymerlin.ru/search/?q={kwargs.get('search')}"]
 
     def parse(self, response: HtmlResponse):
-        next_page = response.xpath("//a[@data-qa-pagination-item='right']/href")
+        next_page = response.xpath("//a[@data-qa-pagination-item='right']/@href").get()
         if next_page:
             yield response.follow(next_page, callback=self.parse)
         links = response.xpath("//a[@data-qa='product-name']")
@@ -27,4 +27,5 @@ class LmruSpider(scrapy.Spider):
         loader.add_xpath('name', "//h1/text()")
         loader.add_xpath('price', "//uc-pdp-price-view/meta[@itemprop='price']/@content")
         loader.add_xpath('photos', "//img[@slot='thumbs']/@src")
+        loader.add_xpath('prod_property', "//div[@class='def-list__group']")
         yield loader.load_item()

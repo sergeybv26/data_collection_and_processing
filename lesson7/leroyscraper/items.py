@@ -5,6 +5,7 @@
 
 import scrapy
 from itemloaders.processors import MapCompose, Compose, TakeFirst
+from lxml import html
 from twisted.web.html import output
 
 
@@ -21,6 +22,13 @@ def convert_price(value):
     return value
 
 
+def extract_property(item):
+    dom = html.fromstring(item)
+    item_property = dom.xpath("//dt/text()")[0]
+    item_param = ' '.join(dom.xpath("//dd/text()")[0].split())
+    return {item_property: item_param}
+
+
 class LeroyscraperItem(scrapy.Item):
     # define the fields for your item here like:
     _id = scrapy.Field()
@@ -28,3 +36,4 @@ class LeroyscraperItem(scrapy.Item):
     url = scrapy.Field(output_processor=TakeFirst())
     price = scrapy.Field(input_processor=MapCompose(convert_price), output_processor=TakeFirst())
     photos = scrapy.Field(input_processor=MapCompose(correct_photos_link))
+    prod_property = scrapy.Field(input_processor=MapCompose(extract_property))

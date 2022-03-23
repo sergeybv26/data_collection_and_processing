@@ -5,6 +5,7 @@
 
 
 # useful for handling different item types with a single interface
+import hashlib
 import os
 
 import scrapy
@@ -13,6 +14,7 @@ from itemadapter import ItemAdapter
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
 from scrapy.pipelines.images import ImagesPipeline
+from scrapy.utils.python import to_bytes
 from ssh_pymongo import MongoSession
 
 load_dotenv(dotenv_path='.env')
@@ -42,6 +44,11 @@ class LeroyPhotosPipeline(ImagesPipeline):
     def item_completed(self, results, item, info):
         item['photos'] = [elem[1] for elem in results if elem[0]]
         return item
+
+    def file_path(self, request, response=None, info=None, *, item=None):
+        image_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
+        folder = item['url'].split('/')[-2]
+        return f'{folder}/full/{image_guid}.jpg'
 
 
 class LeroyDBProcess:
