@@ -7,7 +7,7 @@ import scrapy
 
 
 class InstscraperItem(scrapy.Item):
-
+    _id = scrapy.Field()
     user_id = scrapy.Field()
     username = scrapy.Field()
     f_user_id = scrapy.Field()
